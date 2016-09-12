@@ -29,7 +29,7 @@ PENDING CHANGE **** LCD Pinout
  Pin 14 (DB7) to Arduino pin 12
  Pin 15 to 5V (with resistor?)
  Pin 16 to GND
-**** Arduino NANO Pinout
+**** Arduino UNO Pinout
  D0 to HC-05 TXD
  D1 to HC-05 RXD
  D2 to DS18B20 Signal
@@ -168,12 +168,31 @@ DallasTemperature sensors(&oneWire);
 // Assign the addresses of your 1-Wire temp sensors.
 // See the tutorial on how to obtain these addresses:
 // http://www.hacktronics.com/Tutorials/arduino-1-wire-address-finder.html
-
+/*
+Probe1 = HLT Thermowell
+Probe2 = Mash Tun Thermowell
+Probe3 = Boil Kettle Thermowell
+Probe4 = Ambient on circuit board
+Probe5 = Rims inlet
+Probe6 = Rims Outlet
+*/
 DeviceAddress Probe01 = {
   0x28, 0xFF, 0x3C, 0x15, 0x68, 0x14, 0x04, 0x62
 };
 DeviceAddress Probe02 = {
   0x28, 0xFF, 0xBB, 0xB2, 0x52, 0x14, 0x00, 0x02
+};
+DeviceAddress Probe03 = {
+  
+};
+DeviceAddress Probe04 = {
+  
+};
+DeviceAddress Probe05 = {
+  
+};
+DeviceAddress Probe06 = {
+  
 };
 //END DALLAS
 
@@ -190,7 +209,7 @@ byte bcdToDec(byte val)
 }
 //END RTC
 
-//SHIFTREGISTER SETUP
+//LED SHIFT REGISTER SETUP
 int latchPin = 5;
 int clockPin = 6;
 int dataPin = 4;
@@ -218,7 +237,7 @@ int buzzerCounter2 = 0;
 
 //LCD SHIFT REG
 LiquidCrystal lcd(10);
-byte plusChar[8] = {
+byte plusChar[8] = { //MAY NOT WORK WITH SPI
   0b00100,
   0b01110,
   0b00100,
@@ -244,35 +263,58 @@ byte degChar[8] = {
 //Analog 5 Button
 int analogPin = 1;
 int val = 0;
+//End 5 button
 
 void setup() {
 
-//clear shift register
-  bitClear(leds, blueledstrike);
-      bitClear(leds, greenledstrike);
-      bitClear(leds, redledstrike);
-      updateShiftRegister();
-      //end clear shift
-      pinMode(BTpin, INPUT);
-      BTcontact;
-  Wire.begin();
-  BTinput.begin(9600);
-  //SHIFT REGISTER
-  pinMode(latchPin, OUTPUT);
-  pinMode(dataPin, OUTPUT);  
-  pinMode(clockPin, OUTPUT);
-  //END SHIFT 
-    digitalWrite(buzzer1, LOW);
-    
-  establishContact(); //BLUETOOTH CONNECTION
-delay(2000); //to allow serial read and write
+  // set up the LCD's number of columns and rows: 
+  lcd.begin(20, 4); //ACTUAL BREWSTAND IS (20, 4)
+  lcd.print("Wait for Bluetooth");
+ //end LCD
+ //OneWire DS18B20 sensor setup
+ sensors.begin();
+ sensors.setResolution(Probe01, 10); //set the resolution to 10 bit (Can be 9 to 12 bits .. lower is faster)
+ sensors.setResolution(Probe02, 10);
+ sensors.setResolution(Probe03, 10);
+ sensors.setResolution(Probe04, 10);
+ sensors.setResolution(Probe05, 10);
+ sensors.setResolution(Probe06, 10);
+ sensors.requestTemperatures();
+ //End sensors
+ Wire.begin();//RTC MODULE **MAYBE ONLY NEEDED FOR PROGRAMMING
+ //LED SHIFT REGISTER
+ pinMode(latchPin, OUTPUT);
+ pinMode(dataPin, OUTPUT);  
+ pinMode(clockPin, OUTPUT);
+ bitClear(leds, blueledstrike);
+ bitClear(leds, greenledstrike);
+ bitClear(leds, redledstrike);
+ updateShiftRegister();
+ //end clear shift
+ //Bluetooth Connection
+ pinMode(BTpin, INPUT); //SETS the pin for the BT STATE module to turn on led when devices connected
+ BTcontact; //waits for BTpin to go high with a connection before proceeding
+ BTinput.begin(9600);
+ establishContact(); //waits for input from BTserial interface before proceeding
+ //End Bluetooth Connection
+ digitalWrite(buzzer1, LOW);
+ //       ("01234567890123456789")
+ lcd.clear();
+ lcd.setCursor(0, 0);
+ lcd.print("      Welcome to:   ");
+ lcd.print("---Brewstand v2.0---");
+ lcd.print("  Follow BT prompts "); 
+delay(1000); //to allow serial read and write
  while (BTinput.available() == 0) {
   }
   BTinput.read();
-  BTinput.println("Welcome to Brewstand_2.0");
-  delay(1000);
-  BTinput.println("Follow Prompts for Strike Calc");
+  BTinput.println("*************************************");
+  BTinput.println("*      Welcome to Brewstand_2.0     *");
+  BTinput.println("*                                   *");
+  BTinput.println("* Follow BT Prompts for Strike Calc *");
+  BTinput.println("*************************************");
   delay(250);
+ //Dough in inputs 
   BTinput.println("Enter Dough In Temp");
  while (BTinput.available() == 0) {
   }
@@ -286,9 +328,13 @@ delay(2000); //to allow serial read and write
       TD = BTinput.parseFloat();
       BTinput.print("You entered: ");
       BTinput.println(TD);
- }
-  
-delay(1000);
+}
+lcd.setCursor(0, 0);
+lcd.print("Dough In: ");
+lcd.print(TD);
+lcd.print("*F");
+ //end Dough in inputs 
+delay(250);
 //GRAIN INPUTS and VALIDATION
  BTinput.println("Enter Grain Temp");
  while (BTinput.available() == 0) {
@@ -303,8 +349,14 @@ delay(1000);
       TG = BTinput.parseFloat();
       BTinput.print("You entered: ");
       BTinput.println(TG);
- } 
-delay(1000);
+ }
+//       ("01234567890123456789") 
+lcd.setCursor(0, 1);
+lcd.print("Grain Temp: ");
+lcd.print(TG);
+lcd.print("*F");
+delay(250);
+//end grain inputs and validation
 //Water to Grain Ratio inputs and validations
   BTinput.println("Enter Water to Grain Ratio");
  while (BTinput.available() == 0) {
@@ -320,8 +372,14 @@ delay(1000);
       BTinput.print("You entered: ");
       BTinput.println(M);
  }
-//Water to Grain Weight inputs and validations
-  BTinput.println("Enter Grain Weight in lbs.");
+  lcd.setCursor(0, 2);
+lcd.print("Wtr/Grn: ");
+lcd.print(M);
+lcd.print(" qts/lb");
+delay(250);
+//end Water to Grain Weight inputs and validations
+ //Begin Grain Weights
+ BTinput.println("Enter Grain Weight in lbs.");
  while (BTinput.available() == 0) {
   }
   GW = BTinput.parseFloat();
@@ -336,24 +394,24 @@ delay(1000);
       BTinput.print(GW);
       BTinput.print("lbs");
  } 
-  delay(1000);
+ lcd.setCursor(0, 3);
+lcd.print("Grain Wt: ");
+lcd.print(GW);
+lcd.print("lbs");
+  delay(250);
+  //Begin calculation. Slowed down to look like "thinking"
   BTinput.println("Calculating Strike Volume and Temp");
-
-// set the resolution to 10 bit (Can be 9 to 12 bits .. lower is faster)
-sensors.begin();
-  sensors.setResolution(Probe01, 10);
-  sensors.setResolution(Probe02, 10);
-  sensors.requestTemperatures();
-  
-  delay(750);
+  int i;
+  int n;
+  for (i = 0; i < 25; i++) {
+    BTinput.print(".");
+    delay(100);
+   }
+  BTinput.println(".");
   StrikeCalc();
+  //End calculation
+  
   delay(1500);
- // set up the LCD's number of columns and rows: 
-  lcd.begin(16, 2);
-  // Print a message to the LCD.
-  lcd.print("hello, world!");
-  delay(2000);
-  lcd.clear();
 }
 
 
