@@ -1,7 +1,5 @@
 /* BRAD BREWSTAND TESTING CONFIG
 Just testing github
-https://github.com/olywrestle/brewstandv2.0
-
 5 button screen change
 Dual ds18b20 temp different screens
 Countdown timer
@@ -18,19 +16,6 @@ LCD with SR
  - Left   = Ground
  - Center = Signal (with 3.3K to 4.7K resistor to +5 or 3.3 )
  - Right  = +5 or +3.3 V
-PENDING CHANGE **** LCD Pinout
- Pin 1 to Arduino GND
- Pin 2 to Arduino 5V
- Pin 3 to wiper ( this is the middle pin of the 10k potentiometer )
- Pin 4 (RS) to Arduino pin 7
- Pin 5 (RW) to Arduino GND
- Pin 6  (EN) to Arduino pin 8
- Pin 11 (DB4) to Arduino pin 9
- Pin 12 (DB5)to Arduino  pin 10
- Pin 13 (DB6) to Arduino pin 11
- Pin 14 (DB7) to Arduino pin 12
- Pin 15 to 5V (with resistor?)
- Pin 16 to GND
 **** Arduino UNO Pinout
  D0 to HC-05 TXD
  D1 to HC-05 RXD
@@ -700,4 +685,3 @@ void updateShiftRegister()
    digitalWrite(latchPin, HIGH);
 }
 //END SHIFT
-
